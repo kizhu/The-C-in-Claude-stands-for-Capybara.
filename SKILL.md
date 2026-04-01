@@ -4,7 +4,7 @@
 
 ## 项目位置
 
-所有脚本在 `/Users/goooooooood/Desktop/buddy-reroll/` 目录下:
+所有脚本在项目根目录下:
 - `buddy-reroll.js` — 搜索 userID（方法一）
 - `find-salt.js` — 搜索 SALT（方法二，必须 bun）
 - `patch.sh` — 一键 patch 二进制
@@ -22,7 +22,7 @@
 
 运行:
 ```bash
-bun /Users/goooooooood/Desktop/buddy-reroll/buddy-reroll.js --check "<用户的ID>"
+bun ./buddy-reroll.js --check "<用户的ID>"
 ```
 
 展示当前宠物信息，让用户知道自己的起点。
@@ -45,12 +45,12 @@ bun /Users/goooooooood/Desktop/buddy-reroll/buddy-reroll.js --check "<用户的I
 
 **API 用户（方法一）:**
 ```bash
-bun /Users/goooooooood/Desktop/buddy-reroll/buddy-reroll.js --species <目标> [--rarity <等级>] [--shiny] [--count 3]
+bun ./buddy-reroll.js --species <目标> [--rarity <等级>] [--shiny] [--count 3]
 ```
 
 **OAuth 用户（方法二）:**
 ```bash
-bun /Users/goooooooood/Desktop/buddy-reroll/find-salt.js --uuid "<accountUuid>" --species <目标> [--rarity <等级>] [--shiny] [--count 3]
+bun ./find-salt.js --uuid "<accountUuid>" --species <目标> [--rarity <等级>] [--shiny] [--count 3]
 ```
 
 ### Step 5: 应用结果
@@ -64,7 +64,7 @@ bun /Users/goooooooood/Desktop/buddy-reroll/find-salt.js --uuid "<accountUuid>" 
 **OAuth 用户:**
 1. 用搜索到的 SALT 运行 patch:
 ```bash
-/Users/goooooooood/Desktop/buddy-reroll/patch.sh --salt "<找到的SALT>"
+./patch.sh --salt "<找到的SALT>"
 ```
 2. 或者手动操作:
    - 找到 Claude 二进制: `/Applications/Claude.app/Contents/MacOS/Claude`

@@ -132,8 +132,8 @@ if [[ -z "$NEW_SALT" ]]; then
 
     echo "$FIND_OUTPUT"
 
-    # 从输出中提取第一个 SALT
-    NEW_SALT=$(echo "$FIND_OUTPUT" | grep -oP 'SALT: "\K[^"]+' | head -1)
+    # 从输出中提取第一个 SALT (兼容 macOS BSD grep)
+    NEW_SALT=$(echo "$FIND_OUTPUT" | sed -n 's/.*SALT: "\([^"]*\)".*/\1/p' | head -1)
 
     if [[ -z "$NEW_SALT" ]]; then
         echo -e "${RED}错误: 未找到符合条件的 SALT${NC}"
