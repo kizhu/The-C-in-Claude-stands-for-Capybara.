@@ -71,9 +71,9 @@ if [[ -z "$NEW_SALT" && -z "$EXTRA_ARGS" ]]; then
         exit 1
     fi
 
-    EXTRA_ARGS="--species $CHOSEN_SPECIES"
+    EXTRA_ARGS="--species $CHOSEN_SPECIES --shiny"
     echo ""
-    echo -e "   → Searching for the best $CHOSEN_SPECIES for you..."
+    echo -e "   → Searching for a ✨ shiny $CHOSEN_SPECIES for you..."
     echo ""
 fi
 
