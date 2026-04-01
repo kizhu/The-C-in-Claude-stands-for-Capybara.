@@ -27,18 +27,32 @@ yourAccountUUID + SALT("friend-2026-401")
 
 You can't change your UUID (server-assigned). But the SALT is a 15-character string hardcoded in the binary. Change it, and the same UUID produces a completely different pet.
 
-## Quick Start
+## Quick Start (for everyone)
 
-```bash
-git clone https://github.com/kizhu/The-C-in-Claude-stands-for-Capybara..git
-cd The-C-in-Claude-stands-for-Capybara.
-chmod +x patch.sh
+**You don't need to know how to code.** Just open Terminal and paste one line.
 
-# One command to change your fate:
-./patch.sh --species capybara --shiny
+### Step 1: Open Terminal
+
+On Mac: press `Cmd + Space`, type `Terminal`, hit Enter.
+
+### Step 2: Paste this entire line and hit Enter
+
+```
+git clone https://github.com/kizhu/The-C-in-Claude-stands-for-Capybara.git && cd The-C-in-Claude-stands-for-Capybara && chmod +x patch.sh && ./patch.sh
 ```
 
-That's it. The script auto-detects your UUID, searches for the right SALT, patches the binary, re-signs it, and clears the cache. Restart Claude and type `/buddy`.
+### Step 3: Type the pet you want
+
+You'll see a list of 18 pets. Type the name (e.g. `capybara`) and hit Enter. The script handles everything else automatically.
+
+### Step 4: Restart Claude
+
+Press `Cmd + Q` to fully quit Claude. Reopen it. Type `/buddy`. Done. ✨
+
+> **Already ran it before and want to change again?** Open Terminal, paste:
+> ```
+> cd The-C-in-Claude-stands-for-Capybara && git pull && ./patch.sh
+> ```
 
 ## Usage
 
