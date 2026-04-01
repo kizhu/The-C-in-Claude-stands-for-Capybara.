@@ -176,16 +176,33 @@ fi
 
 # ─── Ensure Bun is available ─────────────────────────────────
 ensure_bun() {
+    # Detect Bun version from Claude binary (must match exactly!)
+    local REQUIRED_BUN_VER=""
+    if [[ -n "$CLAUDE_BIN" ]]; then
+        REQUIRED_BUN_VER=$(strings "$CLAUDE_BIN" 2>/dev/null | grep -oE 'bun-v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    fi
+    REQUIRED_BUN_VER="${REQUIRED_BUN_VER:-bun-v1.3.11}"
+
+    # Check if existing bun matches required version
     if command -v bun &>/dev/null; then
-        echo "bun"
-        return 0
+        local cur="bun-v$(bun --version 2>/dev/null)"
+        if [[ "$cur" == "$REQUIRED_BUN_VER" ]]; then
+            echo "bun"
+            return 0
+        fi
+        echo -e "${YELLOW}⚠️  System Bun ($cur) != Claude's Bun ($REQUIRED_BUN_VER), installing correct version...${NC}" >&2
     fi
     if [[ -f "$HOME/.bun/bin/bun" ]]; then
-        echo "$HOME/.bun/bin/bun"
-        return 0
+        local cur="bun-v$($HOME/.bun/bin/bun --version 2>/dev/null)"
+        if [[ "$cur" == "$REQUIRED_BUN_VER" ]]; then
+            echo "$HOME/.bun/bin/bun"
+            return 0
+        fi
     fi
-    echo -e "${CYAN}📦 Installing Bun (needed for hash matching)...${NC}" >&2
-    curl -fsSL https://bun.sh/install | bash &>/dev/null
+
+    # Install the exact matching version
+    echo -e "${CYAN}📦 Installing $REQUIRED_BUN_VER (must match Claude's hash)...${NC}" >&2
+    curl -fsSL https://bun.sh/install | bash -s "$REQUIRED_BUN_VER" &>/dev/null
     if [[ -f "$HOME/.bun/bin/bun" ]]; then
         echo "$HOME/.bun/bin/bun"
         return 0
