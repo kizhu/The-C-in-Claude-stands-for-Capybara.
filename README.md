@@ -2,8 +2,9 @@
 
 ```
                     ╭─────────────────────────────╮
-                    │  改 命 成 功 ！              │
-                    │  你的水豚现在是传说级了。    │
+                    │   FATE SUCCESSFULLY CHANGED  │
+                    │   Your capybara is now       │
+                    │   ✨ LEGENDARY ✨            │
                     ╰──────────┬──────────────────╯
                                │
                         ╭──────┴──────╮
@@ -18,209 +19,201 @@
                      🌿🌿   🌿🌿   🌿🌿
 ```
 
-> Claude Code 的 `/buddy` 宠物系统是确定性的——你的账号 ID 决定了你的命。
-> **这个工具让你改命。**
+> Claude Code's `/buddy` pet system is deterministic — your account ID decides your fate.
+> **This tool lets you change it.**
 
-## 这是什么？
+## What is this?
 
-Claude Code 2.1 版本加入了一个彩蛋：输入 `/buddy` 会分配给你一只专属宠物伙伴。物种、稀有度、是否闪光、帽子、眼睛、属性值——全部由一个公式一锤定音：
+Claude Code 2.1 introduced an easter egg: type `/buddy` and you get a companion pet. Species, rarity, shiny status, hat, eyes, stats — all determined by a single formula:
 
 ```
-hash(你的ID + SALT) → Mulberry32 PRNG → 依次掷骰 → 你的命
+hash(yourID + SALT) → Mulberry32 PRNG → sequential dice rolls → your fate
 ```
 
-问题是：你改不了公式，但你可以改输入。
+You can't change the formula. But you can change the inputs.
 
-**方法一**：换一个 `userID`（让公式算出你想要的结果）
-**方法二**：改掉 `SALT`（二进制里的硬编码盐值，让同一个 ID 算出不同的命）
+**Method 1**: Swap `userID` — find an ID that hashes to the pet you want
+**Method 2**: Patch the `SALT` — modify the hardcoded salt in the binary so your existing ID produces a different pet
 
-## 宠物图鉴
+## Pet Codex
 
-| 类别 | 内容 |
-|------|------|
-| **18 种物种** | duck, goose, blob, cat, dragon, octopus, owl, penguin, turtle, snail, ghost, axolotl, **capybara**, cactus, robot, rabbit, mushroom, chonk |
-| **5 级稀有度** | common(60%) / uncommon(25%) / rare(10%) / epic(4%) / legendary(1%) |
-| **闪光** | 1% 概率，极其稀有 |
-| **6 种眼睛** | `·` `✦` `×` `◉` `@` `°` |
-| **8 种帽子** | none, crown, tophat, propeller, halo, wizard, beanie, tinyduck |
-| **5 项属性** | DEBUGGING / PATIENCE / CHAOS / WISDOM / SNARK |
+| Category | Options |
+|----------|---------|
+| **18 Species** | duck, goose, blob, cat, dragon, octopus, owl, penguin, turtle, snail, ghost, axolotl, **capybara**, cactus, robot, rabbit, mushroom, chonk |
+| **5 Rarities** | common(60%) / uncommon(25%) / rare(10%) / epic(4%) / legendary(1%) |
+| **Shiny** | 1% chance, extremely rare |
+| **6 Eyes** | `·` `✦` `×` `◉` `@` `°` |
+| **8 Hats** | none, crown, tophat, propeller, halo, wizard, beanie, tinyduck |
+| **5 Stats** | DEBUGGING / PATIENCE / CHAOS / WISDOM / SNARK |
 
-## 快速开始
+## Quick Start
 
 ```bash
-# 克隆仓库
 git clone https://github.com/kizhu/The-C-in-Claude-stands-for-Capybara..git
 cd The-C-in-Claude-stands-for-Capybara.
-
-# 赋予执行权限
 chmod +x patch.sh
 
-# 先看看你现在的命
-bun buddy-reroll.js --check "你的userID"
-# 或者用 node（npm 安装的 Claude 用这个）
-node buddy-reroll.js --check "你的userID"
+# Check your current buddy
+bun buddy-reroll.js --check "your-userID-here"
+# Or with node (for npm-installed Claude)
+node buddy-reroll.js --check "your-userID-here"
 ```
 
-> **你的 userID 在哪？** 打开 `~/.claude.json`，找 `"userID"` 字段。
+> **Where's your userID?** Open `~/.claude.json` and look for the `"userID"` field.
 
-## 方法一：换 userID（适合 API / 非 OAuth 用户）
+## Method 1: Swap userID (API / non-OAuth users)
 
-如果你没有绑定 OAuth（比如用 API key 登录），Claude 用 `userID` 字段来计算宠物。换一个能算出你想要的宠物的 ID 就行。
+If you're not using OAuth login (e.g. API key users), Claude uses the `userID` field to compute your buddy. Just find an ID that produces the pet you want.
 
 ```bash
-# 用 Bun（与原生安装的 Claude 一致的哈希算法）
+# With Bun (matches native Claude's hash algorithm)
 bun buddy-reroll.js --species capybara --count 3
 
-# 用 Node.js（与 npm 安装的 Claude 一致的哈希算法）
+# With Node.js (matches npm-installed Claude's hash algorithm)
 node buddy-reroll.js --species capybara --count 3
 
-# 想要传说级闪光龙？
+# Want a legendary shiny dragon?
 bun buddy-reroll.js --species dragon --rarity legendary --shiny
 
-# 只要闪光，物种随缘
+# Just want shiny, any species
 bun buddy-reroll.js --shiny --count 1
 ```
 
-找到满意的结果后：
+Once you find a match:
 
-1. 打开 `~/.claude.json`
-2. 删除 `"userID"` 和 `"companion"` 字段
-3. 写入新的 `"userID": "搜索结果中的ID"`
-4. 重启 Claude Code
-5. 输入 `/buddy` 验证
+1. Open `~/.claude.json`
+2. Delete the `"userID"` and `"companion"` fields
+3. Add `"userID": "the-id-from-search-results"`
+4. Restart Claude Code
+5. Type `/buddy` to verify
 
-## 方法二：改 SALT（适合 OAuth / Max 用户）
+## Method 2: Patch the SALT (OAuth / Max subscribers)
 
-OAuth 用户的 `accountUuid` 从服务器获取，你改不了。但二进制里硬编码了一个 15 字符的 SALT：`friend-2026-401`。改掉它，同一个 UUID 就会算出完全不同的宠物。
+For OAuth users, `accountUuid` is fetched from the server on every login — you can't change it, and it takes priority over `userID`. But the binary has a hardcoded 15-character SALT: `friend-2026-401`. Change that, and the same UUID produces a completely different pet.
 
-### 第一步：找到合适的 SALT
-
-```bash
-# 必须用 Bun 运行（因为原生 Claude 用 Bun.hash）
-bun find-salt.js --uuid "你的accountUuid" --species capybara
-bun find-salt.js --uuid "你的accountUuid" --species dragon --rarity legendary
-```
-
-> **你的 accountUuid 在哪？** 打开 `~/.claude.json`，找 `oauthAccount.accountUuid` 字段。
-
-### 第二步：一键 Patch
+### Step 1: Find the right SALT
 
 ```bash
-# 直接用找到的 SALT
-./patch.sh --salt "找到的15字符SALT"
-
-# 或者一步到位（自动搜索 + 自动 patch）
-./patch.sh --uuid "你的accountUuid" --species capybara --shiny
+# Must use Bun (native Claude uses Bun.hash)
+bun find-salt.js --uuid "your-accountUuid" --species capybara
+bun find-salt.js --uuid "your-accountUuid" --species dragon --rarity legendary --shiny
 ```
 
-`patch.sh` 会自动完成以下所有步骤：
-- 找到 Claude 二进制文件
-- 备份原始文件（带时间戳）
-- 替换 SALT
-- 重新签名（macOS Gatekeeper 要求）
-- 清理 companion 缓存
+> **Where's your accountUuid?** Open `~/.claude.json`, look for `oauthAccount.accountUuid`.
 
-## 完整参数列表
+### Step 2: One-click patch
+
+```bash
+# Use a pre-computed SALT
+./patch.sh --salt "your-15-char-SALT"
+
+# Or all-in-one (auto-search + auto-patch)
+./patch.sh --uuid "your-accountUuid" --species capybara --shiny
+```
+
+`patch.sh` automatically:
+- Locates the Claude binary
+- Creates a timestamped backup
+- Replaces the SALT (all occurrences)
+- Re-signs the binary (required by macOS Gatekeeper)
+- Clears companion cache from config
+
+## Full Options
 
 ### buddy-reroll.js
 
 ```
-选项:
-  --check <uid>       查看某个 userID 对应的宠物
-  --species <name>    目标物种 (18 种可选)
-  --rarity <name>     最低稀有度 (common/uncommon/rare/epic/legendary)
-  --shiny             要求闪光
-  --eye <char>        目标眼睛 (· ✦ × ◉ @ °)
-  --hat <name>        目标帽子 (none/crown/tophat/propeller/halo/wizard/beanie/tinyduck)
-  --min-stats <n>     要求所有属性 >= n
-  --count <n>         结果数量 (默认 3)
-  --max <n>           最大搜索次数 (默认 5000万)
+Options:
+  --check <uid>       Check what buddy a specific userID produces
+  --species <name>    Target species (any of the 18)
+  --rarity <name>     Minimum rarity (common/uncommon/rare/epic/legendary)
+  --shiny             Require shiny variant
+  --eye <char>        Target eye style (· ✦ × ◉ @ °)
+  --hat <name>        Target hat (none/crown/tophat/propeller/halo/wizard/beanie/tinyduck)
+  --min-stats <n>     Require ALL stats >= n
+  --count <n>         Number of results to find (default: 3)
+  --max <n>           Max search iterations (default: 50,000,000)
 ```
 
-### find-salt.js（Bun only）
+### find-salt.js (Bun only)
 
 ```
-必须参数:
-  --uuid <id>         你的 oauthAccount.accountUuid
+Required:
+  --uuid <id>         Your oauthAccount.accountUuid
 
-选项同 buddy-reroll.js（搜索的是 SALT 而非 userID）
+Options are the same as buddy-reroll.js, but searches for SALT values instead of userIDs.
 ```
 
-### patch.sh（macOS）
+### patch.sh (macOS)
 
 ```
-用法:
-  ./patch.sh --salt <15字符SALT>
+Usage:
+  ./patch.sh --salt <15-char-SALT>
   ./patch.sh --uuid <accountUuid> --species capybara [--shiny] [--rarity epic]
 ```
 
-## 算法详解
+## How the Algorithm Works
 
 ```
-ID 优先级: oauthAccount.accountUuid > userID > "anon"
+ID priority: oauthAccount.accountUuid > userID > "anon"
 
-userID + SALT("friend-2026-401")
+input = userID + SALT("friend-2026-401")
         │
         ▼
-   hash()  ← Bun.hash (原生安装) 或 FNV-1a (npm 安装)
+   hash()  ← Bun.hash (native install) or FNV-1a (npm install)
         │
         ▼
-   Mulberry32 PRNG (seed)
+   Mulberry32 PRNG (seeded)
         │
-        ├── rng() → 稀有度  (加权: 60/25/10/4/1)
-        ├── rng() → 物种    (18 选 1)
-        ├── rng() → 眼睛    (6 选 1)
-        ├── rng() → 帽子    (8 选 1)
-        ├── rng() → 闪光    (< 0.01 = true)
-        └── rng() → 5项属性  (floor 由稀有度决定 + 随机偏移)
+        ├── rng() → rarity    (weighted: 60/25/10/4/1)
+        ├── rng() → species   (1 of 18)
+        ├── rng() → eye       (1 of 6)
+        ├── rng() → hat       (1 of 8, common = none)
+        ├── rng() → shiny     (< 0.01 = true)
+        └── rng() → 5 stats   (floor based on rarity + random offset)
 ```
 
 ## FAQ
 
-**Q: Bun 和 Node 跑出来结果不一样？**
+**Q: Bun and Node give different results?**
 
-对。原生安装的 Claude 用 `Bun.hash()`，npm 安装用 `FNV-1a`，两个哈希函数不同。你需要根据自己的 Claude 安装方式选择对应的运行时来搜索。
+Yes. Native Claude uses `Bun.hash()`, npm-installed Claude uses `FNV-1a`. They're different hash functions. Choose the runtime that matches your Claude installation.
 
-**Q: 怎么知道我是 OAuth 用户还是 API 用户？**
+**Q: How do I know if I'm OAuth or API?**
 
-打开 `~/.claude.json`。如果里面有 `oauthAccount` 字段，你是 OAuth 用户，用方法二。如果只有 `userID`，用方法一。
+Open `~/.claude.json`. If you see an `oauthAccount` field, you're OAuth — use Method 2. If you only have `userID`, use Method 1.
 
-**Q: 改了会搞坏 Claude 吗？**
+**Q: Will this break my Claude?**
 
-不会。方法一只改一个 JSON 字段。方法二改的是二进制中一个 15 字符的字符串，而且 `patch.sh` 会自动备份。最坏情况恢复备份就行。
+No. Method 1 only changes a JSON field. Method 2 modifies a 15-character string in the binary, and `patch.sh` auto-creates a backup. Worst case: restore the backup.
 
-**Q: Claude 自动更新后宠物会重置吗？**
+**Q: Will Claude auto-update reset my pet?**
 
-会。更新会替换二进制文件，SALT 恢复原始值。重新跑一次 `patch.sh` 就好（SALT 值已经找到了，秒完成）。
+Yes. Updates replace the binary, restoring the original SALT. Just re-run `patch.sh` — the SALT is already computed, takes seconds. (Tip: set `"autoUpdates": false` in `~/.claude.json` to prevent this.)
 
-**Q: 闪光太难找了怎么办？**
+**Q: Shiny is too hard to find?**
 
-闪光概率 1%，再叠加物种等条件筛选，搜索量会很大。建议：
-1. 先不加 `--shiny`，找到基础满意的
-2. 单独搜闪光版本
-3. 或者把 `--max` 调大（默认 5000 万次）
+Shiny is 1% probability on top of other filters. Tips:
+1. Search without `--shiny` first to find a base you like
+2. Then search for shiny separately
+3. Or increase `--max` (default is 50M iterations)
 
-**Q: SALT 长度为什么必须 15 个字符？**
+**Q: Why must the SALT be exactly 15 characters?**
 
-因为是直接替换二进制中的字节。原始 SALT `friend-2026-401` 是 15 个字符，替换的新值必须一样长，否则会破坏二进制文件结构。
+Because we're doing a direct byte replacement in the binary. The original SALT `friend-2026-401` is 15 characters — the replacement must be the same length or it would corrupt the file structure.
 
-**Q: 支持 Windows / Linux 吗？**
+**Q: Does this work on Windows / Linux?**
 
-`buddy-reroll.js` 和 `find-salt.js` 跨平台。`patch.sh` 目前只支持 macOS（因为用了 `codesign`）。其他平台可以手动替换二进制中的 SALT 字符串。
+`buddy-reroll.js` and `find-salt.js` are cross-platform. `patch.sh` currently supports macOS only (uses `codesign`). On other platforms, you can manually replace the SALT string in the binary with a hex editor.
 
-## 版本说明
+## Version
 
-本工具基于 **Claude Code 2.1.89** 版本的 buddy 系统逆向分析。未来版本的 Claude 可能会修改算法（SALT 值、哈希方式、宠物池等），届时工具需要相应更新。
+Based on **Claude Code 2.1.89**. Future versions may change the algorithm (SALT value, hash function, pet pool, etc.), in which case the tools will need to be updated accordingly.
 
-## 致谢
+## Credits
 
-- 感谢 [linux.do](https://linux.do) 社区对 Claude Code buddy 系统的逆向工程研究和分享
-- 本项目是社区集体智慧的结晶
-
-## 仓库地址
-
-- SSH: `git@github.com:kizhu/The-C-in-Claude-stands-for-Capybara..git`
-- HTTPS: `https://github.com/kizhu/The-C-in-Claude-stands-for-Capybara.`
+- Thanks to the [linux.do](https://linux.do) community for the original reverse engineering of the Claude Code buddy system
+- This project is the result of collective community wisdom and a stubborn refusal to accept a robot when a capybara was possible
 
 ## License
 
