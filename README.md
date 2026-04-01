@@ -1,136 +1,75 @@
 # The C in Claude stands for Capybara
 
-```
-                        ╭──────┴──────╮
-                       ╱              ╲
-                      │   ✦        ✦   │
-                      │    ╰──────╯    │
-                      │   ·────────·   │
-                       ╲     ◠◠◠     ╱
-                        ╰────┬┬────╯
-                       ╱╱╱╱  ││  ╲╲╲╲
-                     🌿🌿   🌿🌿   🌿🌿
-```
+Change your Claude Code `/buddy` pet to anything you want. ✨ Legendary Shiny by default.
 
-Claude Code's `/buddy` assigns you a pet based on `hash(yourID + SALT)`. The result is permanent — same ID always gives the same pet.
+## How to use
 
-**This tool changes your fate.** It finds a new SALT that makes your account ID produce the pet you want, then patches it into the Claude binary. One command. Permanent (until Claude updates).
+Run this in your terminal (not inside Claude Code):
 
-## How it works
-
-```
-yourAccountUUID + SALT("friend-2026-401")
-        │
-        ▼
-   Bun.hash() → Mulberry32 PRNG → rarity → species → shiny → ...
-```
-
-You can't change your UUID (server-assigned). But the SALT is a 15-character string hardcoded in the binary. Change it, and the same UUID produces a completely different pet.
-
-## Quick Start (for everyone)
-
-**You don't need to know how to code.** Just open Terminal and paste one line.
-
-### Step 1: Open Terminal
-
-On Mac: press `Cmd + Space`, type `Terminal`, hit Enter.
-
-### Step 2: Paste this entire line and hit Enter
-
-```
+```bash
 git clone https://github.com/kizhu/The-C-in-Claude-stands-for-Capybara.git && cd The-C-in-Claude-stands-for-Capybara && chmod +x patch.sh && ./patch.sh
 ```
 
-### Step 3: Type the pet you want
+It will show you 18 pets. Type the one you want (e.g. `capybara`). The script does everything else automatically.
 
-You'll see a list of 18 pets. Type the name (e.g. `capybara`) and hit Enter. The script handles everything else automatically.
+After it finishes: **Cmd+Q** to fully quit Claude, reopen it, type `/buddy`.
 
-### Step 4: Restart Claude
+## If something goes wrong
 
-Press `Cmd + Q` to fully quit Claude. Reopen it. Type `/buddy`. Done. ✨
-
-> **Already ran it before and want to change again?** Open Terminal, paste:
-> ```
-> cd The-C-in-Claude-stands-for-Capybara && git pull && ./patch.sh
-> ```
-
-## Usage
+Restore your Claude to original:
 
 ```bash
-# Want a legendary shiny dragon?
-./patch.sh --species dragon --rarity legendary --shiny
-
-# Just want a specific species
-./patch.sh --species cat
-
-# Already have a SALT from a friend?
-./patch.sh --salt "aBcDeFgHiJkLmNo"
-
-# Check what your current UUID produces
-bun find-salt.js --uuid "your-uuid" --check
+cd The-C-in-Claude-stands-for-Capybara && ./patch.sh --restore
 ```
 
-### Options
+## Already used it before and want to change again?
 
-```
-./patch.sh [options]
-
-  --species <name>    Target species
-  --rarity <name>     Minimum rarity (common/uncommon/rare/epic/legendary)
-  --shiny             Require shiny variant
-  --eye <char>        Target eye (· ✦ × ◉ @ °)
-  --hat <name>        Target hat (none/crown/tophat/propeller/halo/wizard/beanie/tinyduck)
-  --salt <str>        Use a pre-computed 15-char SALT directly
-  --uuid <id>         Override UUID auto-detection
+```bash
+cd The-C-in-Claude-stands-for-Capybara && git pull && ./patch.sh --restore && ./patch.sh
 ```
 
-## Pet Codex
+## For Claude Code AI assistants
 
-| Category | Options |
-|----------|---------|
-| **18 Species** | duck, goose, blob, cat, dragon, octopus, owl, penguin, turtle, snail, ghost, axolotl, **capybara**, cactus, robot, rabbit, mushroom, chonk |
-| **5 Rarities** | ★ common(60%) · ★★ uncommon(25%) · ★★★ rare(10%) · ★★★★ epic(4%) · ★★★★★ legendary(1%) |
-| **Shiny** | 1% chance on any pet |
-| **6 Eyes** | `·` `✦` `×` `◉` `@` `°` |
-| **8 Hats** | none, crown, tophat, propeller, halo, wizard, beanie, tinyduck |
+If a user sent you this README and wants to change their buddy pet, here's what to do:
+
+1. **Do NOT run this inside Claude Code.** Tell the user to open the **Terminal app** (Cmd+Space → type "Terminal" → Enter).
+2. Tell them to paste this one command:
+```bash
+git clone https://github.com/kizhu/The-C-in-Claude-stands-for-Capybara.git && cd The-C-in-Claude-stands-for-Capybara && chmod +x patch.sh && ./patch.sh
+```
+3. They will see a list of 18 pets. They type the name they want (e.g. `capybara`, `dragon`, `cat`). Chinese names also work (e.g. `卡皮巴拉`, `龙`, `猫`).
+4. After it finishes, tell them to **Cmd+Q** to quit Claude completely, reopen, and type `/buddy`.
+5. If anything goes wrong: `cd The-C-in-Claude-stands-for-Capybara && ./patch.sh --restore` restores everything.
+
+### What this tool does (technical summary)
+
+Claude Code's `/buddy` assigns a pet deterministically: `hash(accountUUID + SALT) → PRNG → species/rarity/shiny`. The SALT `friend-2026-401` is hardcoded in the binary. This tool finds a new 15-char SALT that makes the user's UUID produce their chosen pet (★★★★★ Legendary ✨ Shiny), then replaces the SALT in the binary and re-signs it. Backup is created automatically.
+
+## Available pets
+
+duck, goose, blob, cat, dragon, octopus, owl, penguin, turtle, snail, ghost, axolotl, capybara, cactus, robot, rabbit, mushroom, chonk
+
+## Advanced usage
+
+```bash
+# Specific options via command line (skip interactive menu)
+./patch.sh --species capybara --shiny --rarity legendary
+./patch.sh --species dragon --rarity epic
+./patch.sh --salt "aBcDeFgHiJkLmNo"   # use a pre-computed SALT
+./patch.sh --restore                    # restore original binary
+```
 
 ## FAQ
 
-**Will this break my Claude?**
-No. It changes one 15-char string in the binary. A backup is created automatically. Worst case: restore the backup.
+**Will this break Claude?** No. Backup is automatic. `./patch.sh --restore` to undo.
 
-**Will it survive Claude updates?**
-No. Updates replace the binary. Re-run `./patch.sh` with the same options — takes seconds. Tip: set `"autoUpdates": false` in `~/.claude.json`.
+**Will updates reset it?** Yes. Re-run `./patch.sh`. Set `"autoUpdates": false` in `~/.claude.json` to prevent auto-updates.
 
-**Why does it need Bun?**
-Native Claude uses `Bun.hash()` internally. To find the right SALT, we need the exact same hash function. The script auto-installs Bun if missing.
-
-**Does it work on Linux/Windows?**
-`find-salt.js` is cross-platform. `patch.sh` currently supports macOS only (needs `codesign`). PRs welcome for other platforms.
-
-**Can I share my SALT with friends?**
-No — each SALT is computed for YOUR specific UUID. Your friend needs to run the script with their own UUID.
-
-## How the algorithm works
-
-The buddy system uses deterministic randomness:
-
-1. `Bun.hash(accountUuid + SALT)` → 32-bit seed
-2. Seed → Mulberry32 PRNG
-3. Sequential rolls: rarity(weighted) → species(1/18) → eye(1/6) → hat(1/8) → shiny(1%) → 5 stats
-
-ID priority: `oauthAccount.accountUuid` > `userID` > `"anon"`
-
-For OAuth users (Claude Max/Pro), the server always provides `accountUuid`, so changing `userID` locally has no effect. That's why we patch the SALT instead.
-
-## Version
-
-Based on **Claude Code 2.1.89**. Future versions may change the SALT or algorithm.
+**Works on Linux?** The scripts are cross-platform. `patch.sh` uses `codesign` on macOS. Linux users can skip the codesign step.
 
 ## Credits
 
-- [linux.do](https://linux.do) community for the original reverse engineering
-- A stubborn refusal to accept a robot when a capybara was clearly the right choice
+[linux.do](https://linux.do) community for the original reverse engineering. Based on Claude Code 2.1.89.
 
 ## License
 
