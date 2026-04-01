@@ -79,26 +79,35 @@ fi
 
 # ─── Find Claude binary ──────────────────────────────────────
 find_claude_binary() {
-    # Method 1: Native CLI install (~/.local/share/claude/versions/*)
+    # Method 1: Follow `claude` command through symlinks
     if command -v claude &>/dev/null; then
         local claude_path=$(which claude)
-        # Follow symlink
-        if [[ -L "$claude_path" ]]; then
-            claude_path=$(readlink "$claude_path")
-        fi
-        if [[ -f "$claude_path" ]] && grep -q "$OLD_SALT" "$claude_path" 2>/dev/null; then
+        # macOS readlink doesn't have -f, resolve manually
+        while [[ -L "$claude_path" ]]; do
+            local target=$(readlink "$claude_path")
+            # Handle relative symlinks
+            if [[ "$target" != /* ]]; then
+                target="$(dirname "$claude_path")/$target"
+            fi
+            claude_path="$target"
+        done
+        if [[ -f "$claude_path" ]]; then
             echo "$claude_path"
             return 0
         fi
     fi
 
-    # Method 2: Check common native install paths
-    for dir in "$HOME/.local/share/claude/versions"/*; do
-        if [[ -f "$dir" ]] && grep -q "$OLD_SALT" "$dir" 2>/dev/null; then
-            echo "$dir"
-            return 0
-        fi
-    done
+    # Method 2: Check common native CLI install paths
+    if [[ -d "$HOME/.local/share/claude/versions" ]]; then
+        # Find the newest version binary
+        for dir in $(ls -t "$HOME/.local/share/claude/versions/" 2>/dev/null); do
+            local bin="$HOME/.local/share/claude/versions/$dir"
+            if [[ -f "$bin" ]]; then
+                echo "$bin"
+                return 0
+            fi
+        done
+    fi
 
     # Method 3: macOS app bundle
     local app_paths=(
@@ -106,7 +115,7 @@ find_claude_binary() {
         "$HOME/Applications/Claude.app/Contents/MacOS/Claude"
     )
     for path in "${app_paths[@]}"; do
-        if [[ -f "$path" ]] && grep -q "$OLD_SALT" "$path" 2>/dev/null; then
+        if [[ -f "$path" ]]; then
             echo "$path"
             return 0
         fi
@@ -119,11 +128,28 @@ echo ""
 echo -e "${CYAN}🔍 Looking for Claude binary...${NC}"
 
 CLAUDE_BIN=$(find_claude_binary) || {
-    echo -e "${RED}Error: Claude binary not found or SALT already patched${NC}"
-    echo "If already patched, restore backup first, then re-run."
+    echo -e "${RED}Error: Claude binary not found${NC}"
+    echo "Checked: ~/.local/share/claude/versions/*, /Applications/Claude.app"
+    echo "Make sure Claude Code is installed."
     exit 1
 }
 echo -e "   Found: ${CLAUDE_BIN}"
+
+# ─── Check if SALT exists in binary ──────────────────────────
+if ! grep -q "$OLD_SALT" "$CLAUDE_BIN" 2>/dev/null; then
+    echo ""
+    echo -e "${YELLOW}⚠️  Original SALT \"${OLD_SALT}\" not found in binary${NC}"
+    echo "   This means either:"
+    echo "   - The binary was already patched (restore backup first)"
+    echo "   - This Claude version uses a different SALT"
+    echo ""
+    echo -n "   Continue anyway? (y/N) "
+    read -r answer
+    if [[ "$answer" != "y" && "$answer" != "Y" ]]; then
+        echo "Cancelled."
+        exit 0
+    fi
+fi
 
 # ─── Ensure Bun is available ─────────────────────────────────
 ensure_bun() {
