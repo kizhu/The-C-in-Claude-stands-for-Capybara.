@@ -10,6 +10,7 @@ OLD_SALT="friend-2026-401"
 NEW_SALT=""
 UUID=""
 EXTRA_ARGS=""
+RESTORE_MODE=""
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # ─── Help ─────────────────────────────────────────────────────
@@ -38,6 +39,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --salt) NEW_SALT="$2"; shift 2 ;;
         --uuid) UUID="$2"; shift 2 ;;
+        --restore) RESTORE_MODE=1; shift ;;
         --species) EXTRA_ARGS="$EXTRA_ARGS --species $2"; shift 2 ;;
         --shiny) EXTRA_ARGS="$EXTRA_ARGS --shiny"; shift ;;
         --rarity) EXTRA_ARGS="$EXTRA_ARGS --rarity $2"; shift 2 ;;
@@ -142,7 +144,6 @@ find_claude_binary() {
         # macOS readlink doesn't have -f, resolve manually
         while [[ -L "$claude_path" ]]; do
             local target=$(readlink "$claude_path")
-            # Handle relative symlinks
             if [[ "$target" != /* ]]; then
                 target="$(dirname "$claude_path")/$target"
             fi
@@ -154,9 +155,8 @@ find_claude_binary() {
         fi
     fi
 
-    # Method 2: Check common native CLI install paths
+    # Method 2: Native CLI install
     if [[ -d "$HOME/.local/share/claude/versions" ]]; then
-        # Find the newest version binary
         for dir in $(ls -t "$HOME/.local/share/claude/versions/" 2>/dev/null); do
             local bin="$HOME/.local/share/claude/versions/$dir"
             if [[ -f "$bin" ]]; then
@@ -166,7 +166,16 @@ find_claude_binary() {
         done
     fi
 
-    # Method 3: macOS app bundle
+    # Method 3: npm install — find cli.js
+    if command -v claude &>/dev/null; then
+        local npm_cli=$(node -e "try{console.log(require.resolve('@anthropic-ai/claude-code/cli.js'))}catch(e){}" 2>/dev/null)
+        if [[ -f "$npm_cli" ]]; then
+            echo "$npm_cli"
+            return 0
+        fi
+    fi
+
+    # Method 4: macOS app bundle
     local app_paths=(
         "/Applications/Claude.app/Contents/MacOS/Claude"
         "$HOME/Applications/Claude.app/Contents/MacOS/Claude"
@@ -181,6 +190,15 @@ find_claude_binary() {
     return 1
 }
 
+# Detect install type: "native" (Bun binary) or "npm" (Node.js)
+detect_install_type() {
+    if file "$1" 2>/dev/null | grep -q "Mach-O\|ELF"; then
+        echo "native"
+    else
+        echo "npm"
+    fi
+}
+
 echo ""
 echo -e "${CYAN}🔍 Looking for Claude binary...${NC}"
 
@@ -191,6 +209,25 @@ CLAUDE_BIN=$(find_claude_binary) || {
     exit 1
 }
 echo -e "   Found: ${CLAUDE_BIN}"
+
+INSTALL_TYPE=$(detect_install_type "$CLAUDE_BIN")
+echo -e "   Install type: ${INSTALL_TYPE}"
+
+# ─── Restore mode ────────────────────────────────────────────
+if [[ -n "$RESTORE_MODE" ]]; then
+    BACKUP_FOUND=""
+    for f in "${CLAUDE_BIN}.backup."* "${CLAUDE_BIN}.bak"; do
+        if [[ -f "$f" ]]; then BACKUP_FOUND="$f"; break; fi
+    done
+    if [[ -n "$BACKUP_FOUND" ]]; then
+        cp "$BACKUP_FOUND" "$CLAUDE_BIN"
+        codesign -f -s - "$CLAUDE_BIN" 2>/dev/null
+        echo -e "${GREEN}✅ Restored from: $BACKUP_FOUND${NC}"
+    else
+        echo -e "${RED}No backup found.${NC}"
+    fi
+    exit 0
+fi
 
 # ─── Check if SALT exists, auto-restore if needed ────────────
 if ! grep -q "$OLD_SALT" "$CLAUDE_BIN" 2>/dev/null; then
@@ -287,7 +324,12 @@ if [[ -z "$NEW_SALT" ]]; then
     echo ""
     echo -e "${CYAN}🎲 Searching for the perfect SALT...${NC}"
 
-    FIND_OUTPUT=$($BUN "$SCRIPT_DIR/find-salt.js" --uuid "$UUID" --count 1 $EXTRA_ARGS 2>&1) || {
+    HASH_FLAG=""
+    if [[ "$INSTALL_TYPE" == "npm" ]]; then
+        HASH_FLAG="--node"
+    fi
+
+    FIND_OUTPUT=$($BUN "$SCRIPT_DIR/find-salt.js" --uuid "$UUID" --count 1 $HASH_FLAG $EXTRA_ARGS 2>&1) || {
         echo -e "${RED}Search failed:${NC}"
         echo "$FIND_OUTPUT"
         exit 1

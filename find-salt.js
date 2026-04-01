@@ -1,15 +1,15 @@
 #!/usr/bin/env bun
-// find-salt.js — 为 OAuth 用户寻找新 SALT
-// ⚠️ 必须用 Bun 运行（原生安装的 Claude 使用 Bun.hash）
+// find-salt.js — Search for SALT values that produce desired buddy
+// Supports both Bun.hash (native install) and FNV-1a (npm install)
 //
-// 用法: bun find-salt.js --uuid <your-accountUuid> --species capybara
-//       bun find-salt.js --uuid <your-accountUuid> --species dragon --rarity legendary --shiny
+// Usage: bun find-salt.js --uuid <uuid> --species capybara
+//        bun find-salt.js --uuid <uuid> --species capybara --node  (for npm installs)
 
-if (typeof Bun === 'undefined') {
-  console.error('\x1b[31m错误: 此脚本必须用 Bun 运行！\x1b[0m')
-  console.error('原因: 原生安装的 Claude 使用 Bun.hash，只有 Bun 才能匹配')
-  console.error('安装: curl -fsSL https://bun.sh/install | bash')
-  console.error('运行: bun find-salt.js --uuid <your-uuid> --species capybara')
+const FORCE_NODE = process.argv.includes('--node')
+const HAS_BUN = typeof Bun !== 'undefined'
+
+if (!HAS_BUN && !FORCE_NODE) {
+  console.error('\x1b[31mError: Run with Bun for native installs, or add --node for npm installs\x1b[0m')
   process.exit(1)
 }
 
@@ -31,10 +31,21 @@ const HATS = ['none', 'crown', 'tophat', 'propeller', 'halo', 'wizard', 'beanie'
 const STAT_NAMES = ['DEBUGGING', 'PATIENCE', 'CHAOS', 'WISDOM', 'SNARK']
 const RARITY_FLOOR = { common: 5, uncommon: 15, rare: 25, epic: 35, legendary: 50 }
 
-// ─── Bun.hash wrapper ─────────────────────────────────────────
+// ─── Hash functions ───────────────────────────────────────────
 function hashBun(s) {
   return Number(BigInt(Bun.hash(s)) & 0xffffffffn)
 }
+
+function hashFNV1a(s) {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+const hashString = (FORCE_NODE || !HAS_BUN) ? hashFNV1a : hashBun
 
 // ─── Mulberry32 PRNG ──────────────────────────────────────────
 function mulberry32(seed) {
@@ -76,7 +87,7 @@ function rollStats(rng, rarity) {
 }
 
 function rollBuddy(uid, salt) {
-  const seed = hashBun(uid + salt)
+  const seed = hashString(uid + salt)
   const rng = mulberry32(seed)
   const rarity = rollRarity(rng)
   const species = pick(rng, SPECIES)
@@ -139,6 +150,7 @@ function parseArgs(argv) {
       case '--count': opts.count = parseInt(args[++i]); break
       case '--max': opts.max = parseInt(args[++i]); break
       case '--help': case '-h': printHelp(); process.exit(0);
+      case '--node': break; // handled at top level
       default:
         console.error(`\x1b[31m未知参数: ${args[i]}\x1b[0m`)
         printHelp()
@@ -245,8 +257,10 @@ function main() {
   console.log(`\n\x1b[36m📋 当前宠物 (SALT="${currentSalt}"):\x1b[0m`)
   console.log(formatBuddy(currentBuddy))
 
+  const hashLabel = (FORCE_NODE || !HAS_BUN) ? 'FNV-1a (npm install)' : 'Bun.hash (native install)'
   console.log(`\x1b[33m🔧 开始搜索新 SALT...\x1b[0m`)
   console.log(`   UUID: ${opts.uuid}`)
+  console.log(`   Hash: ${hashLabel}`)
   console.log(`   目标: ${[
     opts.species && `物种=${opts.species}`,
     opts.rarity && `稀有度>=${opts.rarity}`,
