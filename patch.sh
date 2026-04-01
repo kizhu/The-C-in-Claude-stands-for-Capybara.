@@ -176,37 +176,58 @@ fi
 
 # ─── Ensure Bun is available ─────────────────────────────────
 ensure_bun() {
-    # Detect Bun version from Claude binary (must match exactly!)
+    # Detect Bun version from Claude binary (must match EXACTLY!)
     local REQUIRED_BUN_VER=""
     if [[ -n "$CLAUDE_BIN" ]]; then
         REQUIRED_BUN_VER=$(strings "$CLAUDE_BIN" 2>/dev/null | grep -oE 'bun-v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
     fi
     REQUIRED_BUN_VER="${REQUIRED_BUN_VER:-bun-v1.3.11}"
+    local BUN_DIR="$SCRIPT_DIR/.bun-local"
 
-    # Check if existing bun matches required version
-    if command -v bun &>/dev/null; then
-        local cur="bun-v$(bun --version 2>/dev/null)"
+    # Check project-local bun first (guaranteed correct version)
+    if [[ -f "$BUN_DIR/bun" ]]; then
+        local cur="bun-v$($BUN_DIR/bun --version 2>/dev/null)"
         if [[ "$cur" == "$REQUIRED_BUN_VER" ]]; then
-            echo "bun"
-            return 0
-        fi
-        echo -e "${YELLOW}⚠️  System Bun ($cur) != Claude's Bun ($REQUIRED_BUN_VER), installing correct version...${NC}" >&2
-    fi
-    if [[ -f "$HOME/.bun/bin/bun" ]]; then
-        local cur="bun-v$($HOME/.bun/bin/bun --version 2>/dev/null)"
-        if [[ "$cur" == "$REQUIRED_BUN_VER" ]]; then
-            echo "$HOME/.bun/bin/bun"
+            echo "$BUN_DIR/bun"
             return 0
         fi
     fi
 
-    # Install the exact matching version
-    echo -e "${CYAN}📦 Installing $REQUIRED_BUN_VER (must match Claude's hash)...${NC}" >&2
-    curl -fsSL https://bun.sh/install | bash -s "$REQUIRED_BUN_VER" &>/dev/null
-    if [[ -f "$HOME/.bun/bin/bun" ]]; then
-        echo "$HOME/.bun/bin/bun"
+    # Download the EXACT version directly from GitHub releases
+    echo -e "${CYAN}📦 Downloading $REQUIRED_BUN_VER (must match Claude exactly)...${NC}" >&2
+
+    local ARCH=$(uname -m)
+    local BUN_ARCH="aarch64"
+    if [[ "$ARCH" == "x86_64" ]]; then BUN_ARCH="x64"; fi
+
+    local OS="darwin"
+    if [[ "$(uname -s)" == "Linux" ]]; then OS="linux"; fi
+
+    local BUN_URL="https://github.com/oven-sh/bun/releases/download/${REQUIRED_BUN_VER}/bun-${OS}-${BUN_ARCH}.zip"
+
+    echo -e "   Downloading from: $BUN_URL" >&2
+    mkdir -p "$BUN_DIR"
+    curl -fsSL "$BUN_URL" -o /tmp/buddy-bun.zip || {
+        echo -e "${RED}Download failed${NC}" >&2
+        return 1
+    }
+    unzip -o /tmp/buddy-bun.zip -d /tmp/buddy-bun &>/dev/null || {
+        echo -e "${RED}Unzip failed${NC}" >&2
+        return 1
+    }
+    cp /tmp/buddy-bun/bun-${OS}-${BUN_ARCH}/bun "$BUN_DIR/bun"
+    chmod +x "$BUN_DIR/bun"
+    rm -rf /tmp/buddy-bun /tmp/buddy-bun.zip
+
+    # Verify
+    local installed="bun-v$($BUN_DIR/bun --version 2>/dev/null)"
+    if [[ "$installed" == "$REQUIRED_BUN_VER" ]]; then
+        echo -e "   ${GREEN}✓ $installed installed${NC}" >&2
+        echo "$BUN_DIR/bun"
         return 0
     fi
+
+    echo -e "${RED}Version mismatch: got $installed, need $REQUIRED_BUN_VER${NC}" >&2
     return 1
 }
 
