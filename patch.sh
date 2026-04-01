@@ -158,19 +158,30 @@ CLAUDE_BIN=$(find_claude_binary) || {
 }
 echo -e "   Found: ${CLAUDE_BIN}"
 
-# ─── Check if SALT exists in binary ──────────────────────────
+# ─── Check if SALT exists, auto-restore if needed ────────────
 if ! grep -q "$OLD_SALT" "$CLAUDE_BIN" 2>/dev/null; then
     echo ""
-    echo -e "${YELLOW}⚠️  Original SALT \"${OLD_SALT}\" not found in binary${NC}"
-    echo "   This means either:"
-    echo "   - The binary was already patched (restore backup first)"
-    echo "   - This Claude version uses a different SALT"
-    echo ""
-    echo -n "   Continue anyway? (y/N) "
-    read -r answer
-    if [[ "$answer" != "y" && "$answer" != "Y" ]]; then
-        echo "Cancelled."
-        exit 0
+    echo -e "${YELLOW}⚠️  Binary was already patched (original SALT not found)${NC}"
+
+    # Auto-find backup
+    BACKUP_FOUND=""
+    for f in "${CLAUDE_BIN}.backup."* "${CLAUDE_BIN}.bak" "${CLAUDE_BIN}.backup"; do
+        if [[ -f "$f" ]] && grep -q "$OLD_SALT" "$f" 2>/dev/null; then
+            BACKUP_FOUND="$f"
+            break
+        fi
+    done
+
+    if [[ -n "$BACKUP_FOUND" ]]; then
+        echo -e "   Found backup: $BACKUP_FOUND"
+        echo -e "${CYAN}   Restoring original binary...${NC}"
+        cp "$BACKUP_FOUND" "$CLAUDE_BIN"
+        codesign -f -s - "$CLAUDE_BIN" 2>/dev/null
+        echo -e "   ${GREEN}Restored!${NC}"
+    else
+        echo -e "${RED}   No backup found. Cannot restore.${NC}"
+        echo "   Try reinstalling Claude Code, then run this script again."
+        exit 1
     fi
 fi
 
