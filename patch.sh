@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ─── Interactive mode (no args) ───────────────────────────────
-if [[ -z "$NEW_SALT" && -z "$EXTRA_ARGS" ]]; then
+if [[ -z "$NEW_SALT" && -z "$EXTRA_ARGS" && -z "$RESTORE_MODE" ]]; then
     echo ""
     echo -e "${YELLOW}🐹 Buddy Patch — Change your Claude Code pet${NC}"
     echo ""
